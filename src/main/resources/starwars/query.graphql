@@ -1,0 +1,9 @@
+query Query {
+  hero {
+    name
+    friends {
+        name
+    }
+    appearsIn
+  }
+}
