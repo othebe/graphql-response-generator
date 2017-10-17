@@ -1,6 +1,7 @@
 package hydrator.implementation;
 
 import graphql.schema.GraphQLEnumValueDefinition;
+import hydrator.ICustomScalarHydrator;
 import hydrator.IEnumHydrator;
 import hydrator.IScalarHydrator;
 import hydrator.IValueHydratorFactory;
@@ -16,10 +17,12 @@ import java.util.Random;
 public class RandomValueHydratorFactory implements IValueHydratorFactory {
     private final IScalarHydrator scalarHydrator;
     private final IEnumHydrator enumHydrator;
+    private final ICustomScalarHydrator customScalarHydrator;
 
-    public RandomValueHydratorFactory() {
+    public RandomValueHydratorFactory(ICustomScalarHydrator customScalarHydrator) {
         this.scalarHydrator = new RandomScalarHydrator();
         this.enumHydrator = new RandomEnumHydrator();
+        this.customScalarHydrator = customScalarHydrator;
     }
 
     @Override
@@ -30,6 +33,11 @@ public class RandomValueHydratorFactory implements IValueHydratorFactory {
     @Override
     public IEnumHydrator provideEnumHydrator() {
         return enumHydrator;
+    }
+
+    @Override
+    public ICustomScalarHydrator provideCustomScalarHydrator() {
+        return customScalarHydrator;
     }
 
     /*******************************************************************************************************************

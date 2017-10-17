@@ -1,6 +1,7 @@
 import generator.*;
 import graphql.GraphQLError;
 import graphql.execution.preparsed.PreparsedDocumentEntry;
+import hydrator.ICustomScalarHydrator;
 import hydrator.implementation.RandomValueHydratorFactory;
 
 import java.io.File;
@@ -30,12 +31,33 @@ public class StarWarsResponseExample {
                 System.out.println(error.getMessage());
             }
         } else {
-            ResponseHydrator responseHydrator = new ResponseHydrator(schemaReader.getGraphQLSchema(), new RandomValueHydratorFactory());
+            ResponseHydrator responseHydrator = new ResponseHydrator(schemaReader.getGraphQLSchema(), new RandomValueHydratorFactory(customScalarHydrator));
             ResponseNode response = responseHydrator.hydrate(preparsedDocumentEntry.getDocument(), getOverride());
 
             System.out.println(response.toJsonString());
         }
     }
+
+    private final static ICustomScalarHydrator customScalarHydrator = new ICustomScalarHydrator() {
+        @Override
+        public boolean canHydrate(String typeName) {
+            switch (typeName) {
+                case "URI":
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        @Override
+        public Object hydrate(String typeName) {
+            if (typeName.compareTo("URI") == 0) {
+                return "http://www.usetheforce.com";
+            }
+
+            return null;
+        }
+    };
 
     /**
      * Returns a response override with the structure:

@@ -6,5 +6,6 @@ query Query {
         name
     }
     appearsIn
+    uri
   }
 }

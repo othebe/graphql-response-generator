@@ -20,6 +20,7 @@ interface Character {
     name: String!
     friends: [Character]
     appearsIn: [Episode]!
+    uri: URI
 }
 
 type Human implements Character {
@@ -28,6 +29,7 @@ type Human implements Character {
     friends: [Character]
     appearsIn: [Episode]!
     homePlanet: String
+    uri: URI
 }
 
 type Droid implements Character {
@@ -36,5 +38,8 @@ type Droid implements Character {
     friends: [Character]
     appearsIn: [Episode]!
     primaryFunction: String
+    uri: URI
 }
+
+scalar URI
 

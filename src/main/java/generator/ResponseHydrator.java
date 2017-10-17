@@ -3,6 +3,7 @@ package generator;
 import graphql.Scalars;
 import graphql.language.*;
 import graphql.schema.*;
+import hydrator.ICustomScalarHydrator;
 import hydrator.IScalarHydrator;
 import hydrator.IValueHydratorFactory;
 
@@ -207,8 +208,13 @@ public class ResponseHydrator {
         // TODO (othebe): Incomplete.
         else if (resolvedType instanceof GraphQLScalarType) {
             IScalarHydrator scalarHydrator = valueHydratorFactory.provideScalarHydrator();
+            ICustomScalarHydrator customScalarHydrator = valueHydratorFactory.provideCustomScalarHydrator();
 
-            if (resolvedType.equals(Scalars.GraphQLString)) {
+            if (customScalarHydrator.canHydrate(resolvedType.getName())) {
+                return customScalarHydrator.hydrate(resolvedType.getName());
+            }
+
+            else if (resolvedType.equals(Scalars.GraphQLString)) {
                 return scalarHydrator.hydrateString();
             }
 
