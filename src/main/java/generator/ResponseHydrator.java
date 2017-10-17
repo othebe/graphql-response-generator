@@ -6,19 +6,30 @@ import graphql.schema.*;
 import hydrator.IScalarHydrator;
 import hydrator.IValueHydratorFactory;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Hydrates the response to a query/mutation.
  */
 public class ResponseHydrator {
+    private final static int DEFAULT_LIST_SIZE = 2;
+
     private final GraphQLSchema graphQLSchema;
     private final IValueHydratorFactory valueHydratorFactory;
+
+    private int listSize = DEFAULT_LIST_SIZE;
 
     public ResponseHydrator(GraphQLSchema graphQLSchema, IValueHydratorFactory valueHydratorFactory) {
         this.graphQLSchema = graphQLSchema;
         this.valueHydratorFactory = valueHydratorFactory;
+    }
+
+    /**
+     * Sets the list size when hydrating lists.
+     * @param listSize Determines how many items are populated into a list response.
+     */
+    public void setListSize(int listSize) {
+        this.listSize = listSize;
     }
 
     /**
@@ -65,6 +76,7 @@ public class ResponseHydrator {
      * @param selectionSet Fields to include for the parent.
      * @param override Map containing values to override.
      * @return ResponseNode tree containing the hydrated response.
+     * TODO (othebe): Simplify branching logic for leaf nodes, lists and overrides.
      */
     private ResponseNode hydrateSelectionRec(GraphQLOutputType parentType, SelectionSet selectionSet, Map<String, Object> override) {
         Map<String, ResponseNode> children = new HashMap<>();
@@ -73,25 +85,69 @@ public class ResponseHydrator {
             if (selection instanceof Field) {
                 Field field = (Field) selection;
                 String fieldName = field.getName();
-
                 GraphQLOutputType selectionType = getOutputTypeForField(parentType, fieldName);
+                boolean isList = isListType(selectionType);
+                boolean hasOverride = override != null && override.containsKey(fieldName);
 
                 ResponseNode fieldResponse;
 
                 boolean isLeafNode = field.getSelectionSet() == null;
                 if (isLeafNode) {
-                    Object fieldValue = (override != null && override.containsKey(fieldName)) ?
-                            override.get(field.getName()) :
-                            hydrateValue(selectionType, valueHydratorFactory);
-                    fieldResponse = ResponseNode.createLeafNode(
-                            new ResponseValue(fieldValue));
-                } else {
-                    Map<String, Object> childOverride = null;
-                    if (override != null && override.containsKey(field.getName())) {
-                        // TODO (othebe): Consider asserting here, or replacing the map with ResponseNode.
-                        childOverride = (Map<String, Object>) override.get(fieldName);
+                    // Leaf node w/overrides.
+                    // Creates a leaf node w/the override values.
+                    if (hasOverride) {
+                        fieldResponse = isList ?
+                                ResponseNode.createLeafNodeList((List<Object>) override.get(fieldName)) :
+                                ResponseNode.createLeafNode(override.get(fieldName));
                     }
-                    fieldResponse = hydrateSelectionRec(selectionType, field.getSelectionSet(), childOverride);
+                    // Leaf node w/no overrides.
+                    // Hydrate w/either a list of values, or a single value.
+                    else {
+                        if (isList) {
+                            List<Object> responses = new LinkedList<>();
+                            for (int i = 0; i < listSize; i++) {
+                                responses.add(
+                                        hydrateValue(selectionType, valueHydratorFactory));
+                            }
+                            fieldResponse = ResponseNode.createLeafNodeList(responses);
+                        } else {
+                            fieldResponse = ResponseNode.createLeafNode(
+                                    hydrateValue(selectionType, valueHydratorFactory));
+                        }
+                    }
+                } else {
+                    // Branch node w/overrides.
+                    // Creates a branch node w/a list of branching nodes, or a single branch node.
+                    if (hasOverride) {
+                        if (isList) {
+                            List<Map<String, Object>> childOverrides = (List<Map<String, Object>>) override.get(fieldName);
+
+                            List<ResponseNode> responses = new LinkedList<>();
+                            for (Map<String, Object> childOverride : childOverrides) {
+                                responses.add(
+                                        hydrateSelectionRec(selectionType, field.getSelectionSet(), childOverride));
+                            }
+                            fieldResponse = ResponseNode.combine(responses);
+                        } else {
+                            // TODO (othebe): Consider asserting here, or replacing the map with ResponseNode.
+                            Map<String, Object> childOverride = (Map<String, Object>) override.get(fieldName);
+                            fieldResponse = hydrateSelectionRec(selectionType, field.getSelectionSet(), childOverride);
+                        }
+                    }
+                    // Branch node w/no overrides.
+                    // Create a branch node w/either a single hydrated node, or a list of branching nodes.
+                    else {
+                        if (isList) {
+                            List<ResponseNode> responses = new LinkedList<>();
+                            for (int i = 0; i < listSize; i++) {
+                                responses.add(
+                                        hydrateSelectionRec(selectionType, field.getSelectionSet(), null));
+                            }
+                            fieldResponse = ResponseNode.combine(responses);
+                        } else {
+                            fieldResponse = hydrateSelectionRec(selectionType, field.getSelectionSet(), null);
+                        }
+                    }
                 }
 
                 String selectionName = field.getAlias() == null ? field.getName() : field.getAlias();
@@ -162,5 +218,20 @@ public class ResponseHydrator {
         }
 
         throw new RuntimeException(String.format("Unhandled value type: %s", resolvedType.getName()));
+    }
+
+    /**
+     * Determines if the type is a list.
+     * @param outputType Checks if this is a list.
+     * @return True if list, else false.
+     */
+    private static boolean isListType(GraphQLOutputType outputType) {
+        GraphQLType resolvedType = outputType;
+
+        if (resolvedType instanceof GraphQLNonNull) {
+            resolvedType = ((GraphQLNonNull) resolvedType).getWrappedType();
+        }
+
+        return resolvedType instanceof GraphQLList;
     }
 }

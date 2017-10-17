@@ -4,9 +4,7 @@ import graphql.execution.preparsed.PreparsedDocumentEntry;
 import hydrator.implementation.RandomValueHydratorFactory;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.*;
 
 public class StarWarsResponseExample {
     private static final String SCHEMA_PATH = "starwars/schema.graphql";
@@ -43,12 +41,25 @@ public class StarWarsResponseExample {
      * Returns a response override with the structure:
      * hero {
      *     name: Hans
+     *     friends: [
+     *          { name: R2-D2 },
+     *          { name: Luke Skywalker }
+     *     ]
      * }
      * @return
      */
     private static Map<String, Object> getOverride() {
         Map<String, Object> heroOverride = new HashMap<>();
         heroOverride.put("name", "Hans");
+
+        List<Map<String, Object>> friendsOverride = new LinkedList<>();
+        Map<String, Object> friendR2D2 = new HashMap<>();
+        friendR2D2.put("name", "R2-D2");
+        friendsOverride.add(friendR2D2);
+        Map<String, Object> friendLuke = new HashMap<>();
+        friendLuke.put("name", "Luke Sykwalker");
+        friendsOverride.add(friendLuke);
+        heroOverride.put("friends", friendsOverride);
 
         Map<String, Object> rootOverride = new HashMap<>();
         rootOverride.put("hero", heroOverride);
