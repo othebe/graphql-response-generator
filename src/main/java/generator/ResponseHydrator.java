@@ -212,6 +212,10 @@ public class ResponseHydrator {
                 return scalarHydrator.hydrateString();
             }
 
+            else if (resolvedType.equals(Scalars.GraphQLID)) {
+                return scalarHydrator.hydrateId();
+            }
+
             else {
                 throw new RuntimeException(String.format("Unhandled scalar type: %s", resolvedType.getName()));
             }

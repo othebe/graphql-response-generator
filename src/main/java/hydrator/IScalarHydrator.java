@@ -5,4 +5,5 @@ package hydrator;
  */
 public interface IScalarHydrator {
     String hydrateString();
+    String hydrateId();
 }

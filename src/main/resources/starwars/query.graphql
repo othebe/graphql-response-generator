@@ -1,5 +1,6 @@
 query Query {
   hero {
+    id
     name
     friends {
         name

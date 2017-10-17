@@ -49,6 +49,11 @@ public class RandomValueHydratorFactory implements IValueHydratorFactory {
         public String hydrateString() {
             return dataFactory.getRandomText(STRING_LENGTH);
         }
+
+        @Override
+        public String hydrateId() {
+            return String.valueOf(dataFactory.getNumberBetween(0, Integer.MAX_VALUE));
+        }
     }
 
 
