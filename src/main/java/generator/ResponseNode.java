@@ -4,15 +4,15 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class ResponseNode {
-    private Object value;
+    private ResponseValue value;
     private Map<String, ResponseNode> children;
 
-    private ResponseNode(Object value, Map<String, ResponseNode> children) {
+    private ResponseNode(ResponseValue value, Map<String, ResponseNode> children) {
         this.value = value;
         this.children = children;
     }
 
-    public static ResponseNode createLeafNode(Object value) {
+    public static ResponseNode createLeafNode(ResponseValue value) {
         return new ResponseNode(value, null);
     }
 
@@ -24,7 +24,7 @@ public class ResponseNode {
         return value != null;
     }
 
-    public Object getValue() {
+    public ResponseValue getValue() {
         return value;
     }
 

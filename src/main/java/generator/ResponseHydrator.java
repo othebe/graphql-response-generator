@@ -83,7 +83,8 @@ public class ResponseHydrator {
                     Object fieldValue = (override != null && override.containsKey(fieldName)) ?
                             override.get(field.getName()) :
                             hydrateValue(selectionType, valueHydratorFactory);
-                    fieldResponse = ResponseNode.createLeafNode(fieldValue);
+                    fieldResponse = ResponseNode.createLeafNode(
+                            new ResponseValue(fieldValue));
                 } else {
                     Map<String, Object> childOverride = null;
                     if (override != null && override.containsKey(field.getName())) {
